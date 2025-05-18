@@ -1,19 +1,20 @@
 using UnityEngine;
 
-public class FollowCamera : MonoBehaviour
+public class CameraFollow : MonoBehaviour
 {
-    public Transform target; // el jugador
-    public Vector3 offset = new Vector3(0, 3, -6);
-    public float smoothSpeed = 0.125f;
+    [SerializeField] private Transform player;
+    [SerializeField] private Vector3 offset = new Vector3(0f, 3f, -7f);
+    [SerializeField, Range(0, 20f)] private float smoothSpeed = 5f;
+    [SerializeField] private bool lookAtPlayer = true;
 
-    void LateUpdate()
+    private void LateUpdate()
     {
-        if (target == null) return;
+        if (player == null) return;
 
-        Vector3 desiredPosition = target.position + offset;
-        Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed);
+        Vector3 desiredPosition = player.position + offset;
+        Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.deltaTime);
         transform.position = smoothedPosition;
 
-        transform.LookAt(target.position + Vector3.up * 1.5f); // mirar hacia el jugador, un poco arriba
+        if (lookAtPlayer) transform.LookAt(player);
     }
 }

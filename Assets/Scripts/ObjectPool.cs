@@ -4,16 +4,15 @@ using System.Collections.Generic;
 public class ObjectPool
 {
     private GameObject prefab;
-    private Queue<GameObject> pool;
-    private int maxPoolSize;
-    private Transform poolParent;
+    private Queue<GameObject> pool = new Queue<GameObject>();
+    private Transform parent;
+    private int maxSize;
 
-    public ObjectPool(GameObject prefab, int initialSize, int maxSize, Transform parent = null)
+    public ObjectPool(GameObject prefab, int initialSize, int maxSize, Transform parent)
     {
         this.prefab = prefab;
-        this.maxPoolSize = maxSize;
-        this.poolParent = parent;
-        pool = new Queue<GameObject>();
+        this.parent = parent;
+        this.maxSize = maxSize;
 
         for (int i = 0; i < initialSize; i++)
         {
@@ -24,16 +23,7 @@ public class ObjectPool
 
     private GameObject CreateNewObject()
     {
-        if (prefab == null)
-        {
-            Debug.LogError("Prefab no asignado en el ObjectPool");
-            return null;
-        }
-
-        GameObject obj = GameObject.Instantiate(prefab);
-        if (poolParent != null)
-            obj.transform.SetParent(poolParent);
-
+        GameObject obj = Object.Instantiate(prefab, parent);
         obj.SetActive(false);
         return obj;
     }
@@ -46,8 +36,15 @@ public class ObjectPool
             obj.SetActive(true);
             return obj;
         }
-
-        return (pool.Count < maxPoolSize) ? CreateNewObject() : null;
+        else if (pool.Count + 1 <= maxSize)
+        {
+            return CreateNewObject();
+        }
+        else
+        {
+            Debug.LogWarning("Pool max size reached. No new objects created.");
+            return null;
+        }
     }
 
     public void ReturnObject(GameObject obj)

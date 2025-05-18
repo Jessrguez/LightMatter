@@ -1,15 +1,18 @@
+// Obstacle.cs
 using UnityEngine;
 
 public class Obstacle : MonoBehaviour
 {
-    public float destroyZ = -10f;
-private void Update()
-{
-    if (transform.position.x < -30f) // Si el obstáculo se sale por la izquierda
-    {
-        gameObject.SetActive(false);
-        ObstacleSpawner.Instance.ReturnObstacle(gameObject);
-    }
-}
+    [Tooltip("Posición en X donde el obstáculo se considera fuera de la pantalla por la izquierda.")]
+    public float outOfBoundsX = -30f;
 
+    private void Update()
+    {
+        // Desactivar y devolver el obstáculo al pool si se sale de la pantalla por la izquierda
+        if (transform.position.x < outOfBoundsX)
+        {
+            gameObject.SetActive(false);
+            ObstacleSpawner.Instance?.ReturnObstacleToPool(gameObject); // Corrected method call
+        }
+    }
 }

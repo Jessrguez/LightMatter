@@ -2,27 +2,39 @@ using UnityEngine;
 
 public class EmissionMaterialSetter : MonoBehaviour
 {
-    public Color emissionColor = Color.white; // Color de emisión
+    [Tooltip("Color de emisión del material.")]
+    [SerializeField] private Color emissionColor = Color.white;
+
+    [Tooltip("Multiplicador de la intensidad de la emisión.")]
+    [SerializeField, Range(1f, 10f)] private float emissionIntensityMultiplier = 5f;
 
     private Material material;
+    private Renderer targetRenderer;
 
-    void Start()
+    private void Start()
     {
-        Renderer renderer = GetComponent<Renderer>();
-        if (renderer == null)
+        targetRenderer = GetComponent<Renderer>();
+        if (targetRenderer == null)
         {
-            Debug.LogWarning("No Renderer found on this GameObject");
+            Debug.LogWarning($"No se encontró Renderer en {gameObject.name}. Deshabilitando script.");
+            enabled = false;
             return;
         }
 
-        material = renderer.material;  // Usamos el material del renderer
+        material = new Material(targetRenderer.material);
+        targetRenderer.material = material;
+
         material.EnableKeyword("_EMISSION");
         SetEmissionColor(emissionColor);
     }
 
     public void SetEmissionColor(Color color)
     {
-        Color finalEmissionColor = color * 5.0f;  // Aumentamos la intensidad de la emisión
-        material.SetColor("_EmissionColor", finalEmissionColor);
+        Color finalColor = color * emissionIntensityMultiplier;
+        if (material != null)
+        {
+            material.SetColor("_EmissionColor", finalColor);
+            targetRenderer?.SetPropertyBlock(null);
+        }
     }
 }

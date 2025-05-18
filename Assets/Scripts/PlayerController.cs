@@ -3,101 +3,182 @@ using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
+    public static PlayerController Instance { get; private set; }
+
     public enum LightMode { Wave, Particle }
-    public LightMode currentMode = LightMode.Wave;
 
-    public float lateralSpeed = 8f; // Velocidad movimiento horizontal
-    public float forwardSpeed = 10f; // Velocidad hacia adelante
-    public float xMin = -4f;
-    public float xMax = 4f;
+    [Header("Configuración de modalidad luz")]
+    [SerializeField] private LightMode currentMode = LightMode.Wave;
+    public LightMode CurrentMode => currentMode;
 
-    public Text modeText;
-    public Animator animator;
+    [Header("Movimiento")]
+    [SerializeField] private float lateralSpeed = 10f;
+    [SerializeField] private float initialForwardSpeed = 5f;
+    [SerializeField] private float accelerationDelay = 2f;
+    [SerializeField] private float forwardAccelerationRate = 0.5f;
+    [SerializeField] private float maxForwardSpeed = 200f;
+    [SerializeField] private float xMin = -5f;
+    [SerializeField] private float xMax = 5f;
+
+    public float ForwardSpeed { get; private set; }
+
+    [Header("Visuales")]
+    [SerializeField] private Text modeText;
+    [SerializeField] private Animator animator;
+    [SerializeField] private Color waveColor = Color.white;
+    [SerializeField] private Color particleColor = Color.cyan;
+    [SerializeField] private float emissionIntensity = 7f;
 
     private Vector3 targetPosition;
+    private Renderer playerRenderer;
+    private Material playerMaterial;
+    private bool isActive = true;
 
-    private Renderer playerRenderer;   // Renderer para cambiar el color
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning($"{nameof(PlayerController)}: instancia duplicada. Eliminando {gameObject.name}");
+            Destroy(gameObject);
+            return;
+        }
 
-    // Colores definidos para modos
-    public Color waveColor = Color.white;
-    public Color particleColor = Color.blue;
+        Instance = this;
+        // Opcional: Descomenta si quieres que persista entre escenas
+        // DontDestroyOnLoad(gameObject);
+    }
 
     private void Start()
     {
-        targetPosition = transform.position;
+        InitializePlayer();
+    }
+
+    private void InitializePlayer()
+    {
         playerRenderer = GetComponent<Renderer>();
-        UpdateModeVisuals();   // Inicializar visuales y texto al inicio
+        if (playerRenderer == null)
+        {
+            Debug.LogError($"{nameof(PlayerController)} no encontró Renderer. Desactivando.");
+            isActive = false;
+            return;
+        }
+
+        playerMaterial = new Material(playerRenderer.material);
+        playerRenderer.material = playerMaterial;
+        playerMaterial.EnableKeyword("_EMISSION");
+
+        targetPosition = transform.position;
+        ForwardSpeed = initialForwardSpeed;
+        UpdateVisuals();
     }
 
     private void Update()
     {
-        MoveForward();
-        SmoothMove();
+        if (!isActive) return;
 
-        // Detectar la pulsación de la tecla "M" para cambiar el modo
+        HandleMovement();
+        HandleModeChange();
+
+        // Aumentar la velocidad hacia adelante gradualmente
+        ForwardSpeed += forwardAccelerationRate * Time.deltaTime;
+        ForwardSpeed = Mathf.Clamp(ForwardSpeed, initialForwardSpeed, maxForwardSpeed);
+    }
+
+    private void HandleMovement()
+    {
+        MoveForward();
+        SmoothLateralMovement();
+
+        float horizontalInput = Input.GetAxisRaw("Horizontal");
+        if (horizontalInput < 0)
+            MoveLeft();
+        else if (horizontalInput > 0)
+            MoveRight();
+        else
+            StopMovement();
+    }
+
+    private void HandleModeChange()
+    {
         if (Input.GetKeyDown(KeyCode.M))
         {
-            ToggleMode();
+            SwitchLightMode();
         }
     }
 
     public void MoveLeft()
     {
         targetPosition.x = Mathf.Clamp(targetPosition.x - lateralSpeed * Time.deltaTime, xMin, xMax);
-        SetAnimatorMovement(true);
+        SetAnimatorMoving(true);
     }
 
     public void MoveRight()
     {
         targetPosition.x = Mathf.Clamp(targetPosition.x + lateralSpeed * Time.deltaTime, xMin, xMax);
-        SetAnimatorMovement(true);
+        SetAnimatorMoving(true);
     }
 
     public void StopMovement()
     {
-        SetAnimatorMovement(false);
+        SetAnimatorMoving(false);
     }
 
-    void MoveForward()
+    private void MoveForward()
     {
-        transform.position += new Vector3(0, 0, forwardSpeed * Time.deltaTime);
+        transform.Translate(Vector3.forward * ForwardSpeed * Time.deltaTime);
     }
 
-    void SmoothMove()
+    private void SmoothLateralMovement()
     {
         Vector3 currentPos = transform.position;
-        Vector3 smoothPos = Vector3.Lerp(new Vector3(currentPos.x, currentPos.y, currentPos.z), new Vector3(targetPosition.x, currentPos.y, currentPos.z), 10f * Time.deltaTime);
-        transform.position = smoothPos;
+        Vector3 newPosition = Vector3.Lerp(currentPos, new Vector3(targetPosition.x, currentPos.y, currentPos.z), 7f * Time.deltaTime);
+        transform.position = newPosition;
     }
 
-    void SetAnimatorMovement(bool moving)
+    private void SetAnimatorMoving(bool moving)
     {
         if (animator != null)
             animator.SetBool("IsMoving", moving);
     }
 
-    public void ToggleMode()
+    public void SwitchLightMode()
     {
-        Debug.Log("ToggleMode called!");
-        currentMode = (currentMode == LightMode.Wave) ? LightMode.Particle : LightMode.Wave;
-        Debug.Log("Current Mode: " + currentMode);
-        UpdateModeVisuals();
+        if (!isActive) return;
+
+        currentMode = currentMode == LightMode.Wave ? LightMode.Particle : LightMode.Wave;
+        UpdateVisuals();
+        
+        if (GameManager.Instance != null)
+            GameManager.Instance.IncrementModeSwitchCount();
+            
+        Debug.Log($"Modo de luz cambiado a: {currentMode}");
+        
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayModeSwitchSound();
     }
 
-    // Actualiza el texto y el color del jugador según el modo actual
-    void UpdateModeVisuals()
+    private void UpdateVisuals()
     {
-        // Actualizar texto
-        if (modeText != null)
-            modeText.text = "Modo: " + currentMode.ToString();
+        if (!isActive) return;
 
-        // Cambiar color del material para modo visible
-        if (playerRenderer != null)
+        if (modeText != null)
         {
-            if (currentMode == LightMode.Wave)
-                playerRenderer.material.color = waveColor;
-            else
-                playerRenderer.material.color = particleColor;
+            modeText.text = "Modo: " + currentMode.ToString();
+        }
+
+        Color color = currentMode == LightMode.Wave ? waveColor : particleColor;
+        if (playerMaterial != null)
+        {
+            playerMaterial.color = color;
+            playerMaterial.SetColor("_EmissionColor", color * emissionIntensity);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
         }
     }
 }

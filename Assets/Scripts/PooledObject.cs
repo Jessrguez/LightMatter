@@ -2,5 +2,6 @@ using UnityEngine;
 
 public class PooledObject : MonoBehaviour
 {
-    [HideInInspector] public GameObject OriginalPrefab;
+    [HideInInspector]
+    public GameObject OriginalPrefab;
 }

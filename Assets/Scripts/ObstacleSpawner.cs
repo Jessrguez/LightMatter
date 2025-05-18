@@ -1,174 +1,174 @@
+// ObstacleSpawner.cs
 using UnityEngine;
 using System.Collections.Generic;
 
 public class ObstacleSpawner : MonoBehaviour
 {
-    public static ObstacleSpawner Instance;
+    public static ObstacleSpawner Instance { get; private set; }
 
-    [Header("Prefabs de Obstáculos")]
-    public GameObject waveObstaclePrefab;
-    public GameObject particleObstaclePrefab;
+    [Header("Obstacle Prefabs")]
+    [SerializeField] private GameObject waveObstaclePrefab;
+    [SerializeField] private GameObject particleObstaclePrefab;
 
-    [Header("Configuración de Spawn")]
-    public float spawnIntervalInitial = 1.5f;
-    public float spawnIntervalMin = 0.5f;
-    public float difficultyIncreaseInterval = 10f;
-    public float spawnDuration = 30f;
-    public float spawnXMin = -4f;
-    public float spawnXMax = 4f;
-    public float spawnZStart = 30f;
+    [Header("Spawn Settings")]
+    [SerializeField] private float[] spawnZPositions = { 30f, 40f, 50f, 60f };
+    public float spawnIntervalCurrent { get; private set; }
+    [SerializeField] private float initialSpawnInterval = 200f;
+    [SerializeField] private float minSpawnInterval = 100f;
+    [SerializeField] private float spawnXRange = 4f;
+    [SerializeField, Range(0f, 1f)] private float oppositeSpawnProbability = 0.5f;
 
-    [Header("Configuración de Movimiento")]
-    public float obstacleSpeedMin = 8f;
-    public float obstacleSpeedMax = 12f;
-    public float obstacleDestroyZ = -15f;
+    [Header("Movement Settings")]
+    [SerializeField] private float minObstacleSpeed = 10f;
+    [SerializeField] private float maxObstacleSpeed = 20f;
 
-    private float timerDifficulty = 0f;
-    private float spawnIntervalCurrent;
-    private float spawnTimer = 0f;
-    private bool isSpawning = true;
-    private float timer = 0f;
-    private int ultimoTipoGenerado = -1;
-
+    private float spawnTimer;
+    private int lastSpawnedType = -1;
+    private Transform playerTransform;
     private ObjectPool waveObstaclePool;
     private ObjectPool particleObstaclePool;
-
-    public void UpdateSpawnInterval(float newInterval)
-    {
-        spawnIntervalCurrent = newInterval;
-        Debug.Log("Spawn interval updated to " + spawnIntervalCurrent);
-    }
+    private bool isSpawningActive = true;
 
     private void Awake()
     {
-        if (Instance == null)
-            Instance = this;
-        else
+        if (Instance != null && Instance != this)
+        {
             Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        spawnIntervalCurrent = initialSpawnInterval;
+        InitializePools();
+        FindPlayer();
+    }
+
+    private void InitializePools()
+    {
+        if (waveObstaclePrefab != null)
+            waveObstaclePool = new ObjectPool(waveObstaclePrefab, 5, 20, transform);
+        if (particleObstaclePrefab != null)
+            particleObstaclePool = new ObjectPool(particleObstaclePrefab, 5, 20, transform);
+    }
+
+    private void FindPlayer()
+    {
+        playerTransform = PlayerController.Instance?.transform;
+        if (playerTransform == null)
+        {
+            var player = FindObjectOfType<PlayerController>();
+            if (player != null) playerTransform = player.transform;
+        }
     }
 
     private void Start()
     {
-        spawnIntervalCurrent = spawnIntervalInitial;
-        if (waveObstaclePrefab != null)
-            waveObstaclePool = new ObjectPool(waveObstaclePrefab, 10, 20, transform);
-        else
-            Debug.LogError("¡No se ha asignado el prefab de obstáculo de ondas!");
-
-        if (particleObstaclePrefab != null)
-            particleObstaclePool = new ObjectPool(particleObstaclePrefab, 10, 20, transform);
-        else
-            Debug.LogError("¡No se ha asignado el prefab de obstáculo de partículas!");
-
-        isSpawning = true;
-        spawnTimer = 0f;
+        spawnTimer = initialSpawnInterval; // Spawn inmediato al inicio
     }
 
     private void Update()
     {
-        if (!isSpawning) return;
+        if (!isSpawningActive || playerTransform == null) return;
 
         spawnTimer += Time.deltaTime;
-        if (spawnTimer >= spawnDuration)
-        {
-            isSpawning = false;
-            Debug.Log("Spawning de obstáculos detenido.");
-            return;
-        }
-
-        timerDifficulty += Time.deltaTime;
-        if (timerDifficulty >= difficultyIncreaseInterval)
-        {
-            timerDifficulty = 0f;
-            IncreaseDifficulty();
-        }
-
-        timer += Time.deltaTime;
-        if (timer >= spawnIntervalCurrent)
+        if (spawnTimer >= initialSpawnInterval)
         {
             SpawnObstacle();
-            timer = 0f;
+            spawnTimer = 0f;
+            AdjustSpawnInterval();
         }
     }
 
-    void IncreaseDifficulty()
+    private void AdjustSpawnInterval()
     {
-        spawnIntervalCurrent = Mathf.Max(spawnIntervalCurrent - 0.15f, spawnIntervalMin);
-        UpdateSpawnInterval(spawnIntervalCurrent); // Usar la función pública para el log
-        if (GameManager.Instance != null)
-            GameManager.Instance.ShowFeedback("¡Dificultad aumentada!");
+        // Disminuye gradualmente el intervalo hasta alcanzar el mínimo
+        initialSpawnInterval = Mathf.Max(minSpawnInterval, initialSpawnInterval * 0.98f);
     }
 
-    void SpawnObstacle()
+    private void SpawnObstacle()
     {
-        if (waveObstaclePrefab == null || particleObstaclePrefab == null)
-        {
-            Debug.LogError("¡No se pueden generar obstáculos porque faltan prefabs!");
-            return;
-        }
-
-        float spawnX = Random.Range(spawnXMin, spawnXMax);
-        Vector3 spawnPosition = new Vector3(spawnX, 1f, spawnZStart);
-        GameObject obstacle = null;
-        GameObject prefabToInstantiate = null;
-
-        if (ultimoTipoGenerado == 0)
-        {
-            obstacle = particleObstaclePool.GetObject();
-            prefabToInstantiate = particleObstaclePrefab;
-            ultimoTipoGenerado = 1;
-        }
-        else
-        {
-            obstacle = waveObstaclePool.GetObject();
-            prefabToInstantiate = waveObstaclePrefab;
-            ultimoTipoGenerado = 0;
-        }
+        Vector3 spawnPos = CalculateSpawnPosition();
+        GameObject obstacle = GetNextObstacle();
 
         if (obstacle != null)
         {
-            obstacle.transform.position = spawnPosition;
-            obstacle.SetActive(true); // Asegurarse de que el objeto esté activo
-
-            PooledObject pooledObject = obstacle.GetComponent<PooledObject>();
-            if (pooledObject == null)
-            {
-                pooledObject = obstacle.AddComponent<PooledObject>();
-            }
-            pooledObject.OriginalPrefab = prefabToInstantiate;
-
-            ObstacleMovement obstacleMover = obstacle.GetComponent<ObstacleMovement>();
-            if (obstacleMover == null)
-            {
-                obstacleMover = obstacle.AddComponent<ObstacleMovement>();
-            }
-
-            float playerForwardSpeed = (PlayerController.FindObjectOfType<PlayerController>() != null) ? PlayerController.FindObjectOfType<PlayerController>().forwardSpeed : 10f;
-            float speedOffset = Random.Range(-2f, 2f);
-            obstacleMover.speed = playerForwardSpeed + speedOffset;
-            obstacleMover.destroyZ = obstacleDestroyZ;
+            SetupObstacle(obstacle, spawnPos);
         }
     }
 
-    public void ReturnObstacle(GameObject obstacle)
+    private Vector3 CalculateSpawnPosition()
     {
-        if (obstacle != null)
+        float spawnZ = playerTransform.position.z + spawnZPositions[Random.Range(0, spawnZPositions.Length)];
+        float spawnX = Random.Range(-spawnXRange, spawnXRange);
+        return new Vector3(spawnX, 1f, spawnZ);
+    }
+
+    private GameObject GetNextObstacle()
+    {
+        int nextType = DetermineNextObstacleType();
+        lastSpawnedType = nextType;
+
+        return nextType == 0 ?
+            waveObstaclePool?.GetObject() :
+            particleObstaclePool?.GetObject();
+    }
+
+    private int DetermineNextObstacleType()
+    {
+        if (lastSpawnedType == -1)
+            return Random.Range(0, 2);
+
+        return Random.value < oppositeSpawnProbability ?
+            1 - lastSpawnedType :
+            lastSpawnedType;
+    }
+
+private void SetupObstacle(GameObject obstacle, Vector3 position)
+{
+    obstacle.transform.position = position;
+    obstacle.transform.localScale = Vector3.one; // Asegura escala uniforme
+    obstacle.SetActive(true);
+
+    var mover = obstacle.GetComponent<ObstacleMovement>();
+    if (mover != null)
+    {
+        mover.speed = Random.Range(minObstacleSpeed, maxObstacleSpeed);
+    }
+}
+
+    public void ReturnObstacleToPool(GameObject obstacle) // Nombre consistente
+    {
+        if (obstacle == null) return;
+
+        obstacle.SetActive(false);
+
+        switch (obstacle.tag)
         {
-            obstacle.SetActive(false);
-            PooledObject pooledObject = obstacle.GetComponent<PooledObject>();
-            if (pooledObject != null && pooledObject.OriginalPrefab == waveObstaclePrefab)
-            {
-                waveObstaclePool.ReturnObject(obstacle);
-            }
-            else if (pooledObject != null && pooledObject.OriginalPrefab == particleObstaclePrefab)
-            {
-                particleObstaclePool.ReturnObject(obstacle);
-            }
-            else
-            {
-                Debug.LogError("Tried to return an obstacle that doesn't belong to either pool or has no PooledObject component.");
-                Destroy(obstacle); // Fallback
-            }
+            case "WaveObstacle":
+                waveObstaclePool?.ReturnObject(obstacle);
+                break;
+            case "ParticleObstacle":
+                particleObstaclePool?.ReturnObject(obstacle);
+                break;
+            default:
+                Destroy(obstacle);
+                break;
         }
+    }
+
+    public void SetSpawnInterval(float newInterval)
+    {
+        spawnIntervalCurrent = Mathf.Max(minSpawnInterval, newInterval);
+    }
+
+    public void SetSpawningActive(bool active)
+    {
+        isSpawningActive = active;
+    }
+
+    public void ResetSpawner()
+    {
+        initialSpawnInterval = 2.5f;
+        spawnTimer = 0f;
+        lastSpawnedType = -1;
     }
 }

@@ -1,29 +1,28 @@
 using UnityEngine;
+using UnityEngine;
 
 public class PlayerInputKeyboard : MonoBehaviour
 {
-    public PlayerController playerController;
+    [SerializeField] private PlayerController playerController;
 
-    void Update()
+    private void Start()
     {
+        if (playerController == null)
+        {
+            Debug.LogError("PlayerController no asignado en PlayerInputKeyboard.");
+            enabled = false;
+        }
+    }
+
+    private void Update()
+    {
+        if (playerController == null) return;
+
         float horizontalInput = Input.GetAxisRaw("Horizontal");
+        if (horizontalInput < 0) playerController.MoveLeft();
+        else if (horizontalInput > 0) playerController.MoveRight();
+        else playerController.StopMovement();
 
-        if (horizontalInput < 0)
-        {
-            playerController.MoveLeft();
-        }
-        else if (horizontalInput > 0)
-        {
-            playerController.MoveRight();
-        }
-        else
-        {
-            playerController.StopMovement();
-        }
-
-        if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.M))
-        {
-            playerController.ToggleMode();
-        }
+        if (Input.GetKeyDown(KeyCode.M)) playerController.SwitchLightMode();
     }
 }

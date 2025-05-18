@@ -1,71 +1,73 @@
+// GameManager.cs
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using System.Collections;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
     [Header("Puntuación y vidas")]
-    public int score = 0;
-    public int lives = 3;
-    public int maxLives = 5;
+    [SerializeField] private int score = 0;
+    [SerializeField] private int lives = 3;
+    [SerializeField] private int maxLives = 5;
 
     [Header("UI")]
-    public Text scoreText;
-    public Text livesText;
-    public Text modeText;
-    public GameObject gameOverPanel;
-    public Text gameOverText;
-    public Text feedbackText;
+    [SerializeField] private TMP_Text scoreText;
+    [SerializeField] private TMP_Text livesText;
+    [SerializeField] private TMP_Text modeText;
+    [SerializeField] private GameObject gameOverPanel;
+    [SerializeField] private TMP_Text gameOverText;
 
     [Header("Configuración de juego")]
-    public float difficultyIncreaseInterval = 15f;
-    private float timerDifficulty = 0f;
-    public float spawnIntervalInitial = 2f;
-    public float spawnIntervalMin = 0.8f;
-    private float spawnIntervalCurrent;
+    [SerializeField] public float spawnIntervalInitial = 3f;
+    [SerializeField] private string gameOverSceneName = "GameOverScene"; // Nombre de la escena de Game Over
+    [SerializeField] private string mainMenuSceneName = "MainMenu"; //Nombre de la escena del Menú Principal
 
+    public float SpawnInterval
+    {
+        get => ObstacleSpawner.Instance != null ? ObstacleSpawner.Instance.spawnIntervalCurrent : 0f;
+        set { if (ObstacleSpawner.Instance != null) ObstacleSpawner.Instance.SetSpawnInterval(value); }
+    }
     private bool isGameOver = false;
+
+    private float timeElapsed = 0f;
+    private int modeSwitchCount = 0;
+    private int obstaclesAvoidedCount = 0;
+    private int totalScore = 0;
 
     private void Awake()
     {
         if (Instance == null)
+        {
             Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
         else
+        {
             Destroy(gameObject);
+        }
     }
 
     private void Start()
     {
-        spawnIntervalCurrent = spawnIntervalInitial;
+        // Inicializa la propiedad SpawnInterval con el valor inicial
+        SpawnInterval = spawnIntervalInitial;
         UpdateUI();
-        if (gameOverPanel != null)
-            gameOverPanel.SetActive(false);
-        if (feedbackText != null)
-            feedbackText.text = "";
-        if (modeText != null)
-            modeText.text = "";
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+        if (modeText != null) modeText.text = "";
+        Time.timeScale = 1f;
+        Cursor.visible = false; // Asegúrate de que el cursor esté oculto durante el juego
     }
 
     private void Update()
     {
-        if (isGameOver) return;
-
-        timerDifficulty += Time.deltaTime;
-        if (timerDifficulty >= difficultyIncreaseInterval)
+        if (isGameOver)
         {
-            timerDifficulty = 0f;
-            IncreaseDifficulty();
+            return; // Ya no actualizamos el tiempo si el juego ha terminado
         }
-    }
 
-    void IncreaseDifficulty()
-    {
-        spawnIntervalCurrent = Mathf.Max(spawnIntervalCurrent - 0.2f, spawnIntervalMin);
-        ObstacleSpawner.Instance.UpdateSpawnInterval(spawnIntervalCurrent);
-        ShowFeedback("¡Dificultad aumentada!");
+        timeElapsed += Time.deltaTime;
     }
 
     public void AddScore(int amount)
@@ -73,8 +75,8 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
 
         score += amount;
+        totalScore += amount;
         UpdateUI();
-        ShowFeedback("+ " + amount + " puntos");
     }
 
     public void GainLife(int amount)
@@ -83,7 +85,6 @@ public class GameManager : MonoBehaviour
 
         lives = Mathf.Min(lives + amount, maxLives);
         UpdateUI();
-        ShowFeedback("¡Vida recuperada!");
     }
 
     public void LoseLife()
@@ -92,48 +93,119 @@ public class GameManager : MonoBehaviour
 
         lives--;
         UpdateUI();
-        ShowFeedback("¡Perdiste una vida!");
+
         if (lives <= 0)
-            GameOver();
+        {
+            TriggerGameOver();
+        }
     }
 
-    void UpdateUI()
+    private void UpdateUI()
     {
         if (scoreText != null)
-            scoreText.text = "Puntuación: " + score;
+            scoreText.text = $"Puntuación: {score}";
+
         if (livesText != null)
-            livesText.text = "Vidas: " + lives;
+            livesText.text = $"Vidas: {lives}";
     }
 
-    void GameOver()
+    private void TriggerGameOver()
     {
         isGameOver = true;
-        if (gameOverPanel != null)
-            gameOverPanel.SetActive(true);
-        if (gameOverText != null)
-            gameOverText.text = "¡Juego Terminado!\nPuntuación Final: " + score + "\nPulsa para reiniciar";
         Time.timeScale = 0f;
+        SaveGameStats();
+
+        // Verifica si la escena está en el build
+        if (Application.CanStreamedLevelBeLoaded(gameOverSceneName))
+        {
+            SceneManager.LoadScene(gameOverSceneName);
+            AudioManager.Instance?.PlayGameOverSound();
+        }
+        else
+        {
+            Debug.LogError($"La escena {gameOverSceneName} no está en Build Settings!");
+        }
     }
 
     public void RestartGame()
     {
         Time.timeScale = 1f;
+        // Reiniciar variables
+        score = 0;
+        lives = maxLives;
+        timeElapsed = 0f;
+        modeSwitchCount = 0;
+        obstaclesAvoidedCount = 0;
+        totalScore = 0;
+        isGameOver = false;
+        // Carga la escena del juego actual para reiniciar el juego.
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    public void ShowFeedback(string message)
+    public void IncrementModeSwitchCount()
     {
-        if (feedbackText != null)
-        {
-            StopAllCoroutines();
-            StartCoroutine(FeedbackCoroutine(message));
-        }
+        modeSwitchCount++;
     }
 
-    private IEnumerator FeedbackCoroutine(string message)
+    public void IncrementObstaclesAvoidedCount()
     {
-        feedbackText.text = message;
-        yield return new WaitForSecondsRealtime(1.5f);
-        feedbackText.text = "";
+        obstaclesAvoidedCount++;
+    }
+
+    private void SaveGameStats()
+    {
+        PlayerPrefs.SetFloat("SurvivalTime", timeElapsed);
+        PlayerPrefs.SetInt("ModeSwitches", modeSwitchCount);
+        PlayerPrefs.SetInt("ObstaclesAvoided", obstaclesAvoidedCount);
+        PlayerPrefs.SetInt("TotalScore", totalScore);
+        PlayerPrefs.Save();
+    }
+
+    // Método para cuando el jugador choca con un obstáculo
+    public void PlayerHitObstacle()
+    {
+        LoseLife();
+        // Aquí podrías añadir efectos visuales, sonido, vibraciones, etc.
+        // Ejemplo: Efecto de sonido en otro script
+    }
+
+    // Métodos para acceder a las estadísticas (necesario para la pantalla de Game Over)
+    public float GetSurvivalTime() { return timeElapsed; }
+    public int GetModeSwitchCount() { return modeSwitchCount; }
+    public int GetObstaclesAvoidedCount() { return obstaclesAvoidedCount; }
+    public int GetTotalScore() { return totalScore; }
+
+    // Añade estos métodos a tu GameManager.cs
+    public void ResetGame()
+    {
+        score = 0;
+        lives = maxLives;
+        timeElapsed = 0f;
+        modeSwitchCount = 0;
+        obstaclesAvoidedCount = 0;
+        totalScore = 0;
+        isGameOver = false;
+        SpawnInterval = spawnIntervalInitial;
+    }
+
+    public void ReturnToMainMenu()
+    {
+        ResetGame();
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(mainMenuSceneName);
+    }
+
+    // Añade este método a tu GameManager
+    public void LoadMainMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(mainMenuSceneName);
+
+        // Opcional: Resetear valores si es necesario
+        // ResetGame();
+
+        // Asegurar que el cursor sea visible
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
     }
 }
