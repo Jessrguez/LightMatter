@@ -13,7 +13,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Movimiento")]
     [SerializeField] private float lateralSpeed = 10f;
-    [SerializeField] private float initialForwardSpeed = 5f;
+    [SerializeField] private float initialForwardSpeed = 10f;
     [SerializeField] private float accelerationDelay = 2f;
     [SerializeField] private float forwardAccelerationRate = 0.5f;
     [SerializeField] private float maxForwardSpeed = 200f;

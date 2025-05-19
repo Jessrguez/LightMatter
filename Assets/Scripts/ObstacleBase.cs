@@ -60,4 +60,12 @@ public abstract class ObstacleBase : MonoBehaviour
                 GameManager.Instance?.IncrementObstaclesAvoidedCount();
         }
     }
+    public virtual void ResetObstacle()
+{
+    passed = false;
+    if (obstacleCollider != null)
+    {
+        obstacleCollider.enabled = true;
+    }
+}
 }

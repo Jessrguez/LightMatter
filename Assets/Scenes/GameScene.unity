@@ -267,7 +267,6 @@ GameObject:
   - component: {fileID: 36048314}
   - component: {fileID: 36048313}
   - component: {fileID: 36048312}
-  - component: {fileID: 36048316}
   m_Layer: 0
   m_Name: Ground
   m_TagString: Untagged
@@ -365,32 +364,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &36048316
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 36048311}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03aa0b52e588ae144853d47c5ed0f9f2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  waveObstaclePrefab: {fileID: 6526656589154775437, guid: 48acf245f5f59324d8115feecec95f93, type: 3}
-  particleObstaclePrefab: {fileID: 7708716049172360885, guid: 430e572924d09eb4da1691faa1a92c88, type: 3}
-  spawnZPositions:
-  - 30
-  - 40
-  - 50
-  - 60
-  spawnIntervalCurrent: 0.5
-  spawnIntervalMin: 1.5
-  spawnXMin: -4
-  spawnXMax: 4
-  oppositeSpawnProbability: 0.5
-  obstacleSpeedMin: -5
-  obstacleSpeedMax: -10
 --- !u!1 &302977890
 GameObject:
   m_ObjectHideFlags: 0
@@ -533,7 +506,7 @@ Camera:
   m_GameObject: {fileID: 330585543}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
+  m_ClearFlags: 4
   m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
@@ -542,7 +515,7 @@ Camera:
   m_ShutterSpeed: 0.005
   m_Aperture: 16
   m_FocusDistance: 10
-  m_FocalLength: 50
+  m_FocalLength: 20.78461
   m_BladeCount: 5
   m_Curvature: {x: 2, y: 11}
   m_BarrelClipping: 0.25
@@ -557,7 +530,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 100
-  field of view: 60
+  field of view: 55.5
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -583,13 +556,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.2164396, y: 0, z: 0, w: 0.97629607}
-  m_LocalPosition: {x: 0, y: 1.5, z: -6}
+  m_LocalRotation: {x: 0.008726558, y: 0, z: 0, w: 0.999962}
+  m_LocalPosition: {x: 0, y: 2, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 25, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 1, y: 0, z: 0}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -647,9 +620,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 1673096355}
-  offset: {x: 0, y: 2, z: -1}
-  smoothSpeed: 5
-  lookAtPlayer: 0
+  offset: {x: 0, y: 1, z: -1}
+  smoothSpeed: 5.1
+  lookAtPlayer: 1
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -1185,9 +1158,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78b7551704c338d4f9847e86a0abca84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 10
+  speed: 5
   showDebugGizmo: 1
-  outOfBoundsX: -10
+  outOfBoundsX: -30
   persistTimeOffScreen: 3
 --- !u!1 &1218292662
 GameObject:
@@ -1253,7 +1226,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 9b9edd6a7803a8944909c124faed4fef, type: 2}
+  - {fileID: 2100000, guid: abda4bbf5bfb7f14c916f72b4832dbde, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1474,17 +1447,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentMode: 0
-  lateralSpeed: 8
-  initialForwardSpeed: 20
-  forwardAccelerationRate: 0.2
-  maxForwardSpeed: 150
-  xMin: -4
-  xMax: 4
+  lateralSpeed: 10
+  initialForwardSpeed: 5
+  accelerationDelay: 2
+  forwardAccelerationRate: 0.5
+  maxForwardSpeed: 200
+  xMin: -5
+  xMax: 5
   modeText: {fileID: 0}
   animator: {fileID: 0}
   waveColor: {r: 1, g: 1, b: 1, a: 1}
   particleColor: {r: 0, g: 0, b: 1, a: 1}
-  emissionIntensity: 5
+  emissionIntensity: 7
 --- !u!135 &1673096350
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1607,7 +1581,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1673096347}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalPosition: {x: 0, y: 0, z: -3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1651,9 +1625,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a8a5df7f529ad5b48a68c406f1d02267, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minZ: -10
-  maxZ: 1000
-  resetZ: 0
 --- !u!1 &1782315310
 GameObject:
   m_ObjectHideFlags: 0
@@ -1680,7 +1651,7 @@ Transform:
   m_GameObject: {fileID: 1782315310}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 30}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1705,13 +1676,12 @@ MonoBehaviour:
   - 40
   - 50
   - 60
-  spawnIntervalCurrent: 2
-  spawnIntervalMin: 1.5
-  spawnXMin: -4
-  spawnXMax: 4
+  initialSpawnInterval: 2
+  minSpawnInterval: 2
+  spawnXRange: 4
   oppositeSpawnProbability: 0.5
-  obstacleSpeedMin: -5
-  obstacleSpeedMax: -5
+  minObstacleSpeed: 10
+  maxObstacleSpeed: 20
 --- !u!1 &1842610095
 GameObject:
   m_ObjectHideFlags: 0
@@ -1805,7 +1775,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78b7551704c338d4f9847e86a0abca84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 10
+  speed: 5
   showDebugGizmo: 1
   outOfBoundsX: -10
   persistTimeOffScreen: 3
@@ -1953,6 +1923,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -8848027705239413037, guid: 48acf245f5f59324d8115feecec95f93, type: 3}
+      propertyPath: m_CollisionDetection
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3405100343046615040, guid: 48acf245f5f59324d8115feecec95f93, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -2021,6 +1995,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 124430251711218003, guid: 4990949446612ef4aa2608adf7c7b17a, type: 3}
+      propertyPath: SizeModule.y.minMaxState
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 124430251711218003, guid: 4990949446612ef4aa2608adf7c7b17a, type: 3}
+      propertyPath: SizeModule.z.minMaxState
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 124430251711218003, guid: 4990949446612ef4aa2608adf7c7b17a, type: 3}
+      propertyPath: SizeModule.curve.minMaxState
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 3370004088200827300, guid: 4990949446612ef4aa2608adf7c7b17a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -2064,6 +2050,10 @@ PrefabInstance:
     - target: {fileID: 6351261399649684798, guid: 4990949446612ef4aa2608adf7c7b17a, type: 3}
       propertyPath: m_Name
       value: ElectronEffect
+      objectReference: {fileID: 0}
+    - target: {fileID: 6351261399649684798, guid: 4990949446612ef4aa2608adf7c7b17a, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2130,6 +2120,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ParticleObstacle
       objectReference: {fileID: 0}
+    - target: {fileID: 7708716049172360885, guid: 430e572924d09eb4da1691faa1a92c88, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8590959151827037609, guid: 430e572924d09eb4da1691faa1a92c88, type: 3}
       propertyPath: m_Size.x
       value: 2
@@ -2157,12 +2151,12 @@ SceneRoots:
   - {fileID: 330585546}
   - {fileID: 410087041}
   - {fileID: 832575519}
+  - {fileID: 1782315311}
   - {fileID: 36048315}
   - {fileID: 1673096355}
   - {fileID: 1127581700691532442}
   - {fileID: 5082168907341036474}
   - {fileID: 1383051451528353245}
-  - {fileID: 1782315311}
   - {fileID: 302977894}
   - {fileID: 1633375177}
   - {fileID: 1295540684}
