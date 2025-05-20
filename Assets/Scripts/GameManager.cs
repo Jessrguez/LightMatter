@@ -5,71 +5,73 @@ using TMPro;
 
 public class GameManager : MonoBehaviour
 {
+    // Singleton pattern para acceso global
     public static GameManager Instance;
 
     [Header("Puntuación y vidas")]
-    [SerializeField] private int score = 0;
-    [SerializeField] private int lives = 3;
-    [SerializeField] private int maxLives = 5;
+    [SerializeField] private int score = 0;         // Puntuación actual del jugador
+    [SerializeField] private int lives = 3;        // Vidas actuales del jugador
+    [SerializeField] private int maxLives = 5;      // Máximo de vidas posibles
 
     [Header("UI")]
-    [SerializeField] private TMP_Text scoreText;
-    [SerializeField] private TMP_Text livesText;
-    [SerializeField] private TMP_Text modeText;
-    [SerializeField] private GameObject gameOverPanel;
-    [SerializeField] private TMP_Text gameOverText;
+    [SerializeField] private TMP_Text scoreText;    // Texto UI para mostrar puntuación
+    [SerializeField] private TMP_Text livesText;    // Texto UI para mostrar vidas
+    [SerializeField] private TMP_Text modeText;     // Texto UI para modo de juego
+    [SerializeField] private GameObject gameOverPanel; // Panel de fin de juego
+    [SerializeField] private TMP_Text gameOverText;  // Texto de fin de juego
 
     [Header("Configuración de juego")]
-    [SerializeField] public float spawnIntervalInitial = 3f;
-    [SerializeField] private string gameOverSceneName = "GameOverScene"; // Nombre de la escena de Game Over
-    [SerializeField] private string mainMenuSceneName = "MainMenu"; //Nombre de la escena del Menú Principal
+    [SerializeField] public float spawnIntervalInitial = 3f; // Intervalo inicial de spawn de obstáculos
+    [SerializeField] private string gameOverSceneName = "GameOverScene"; // Escena de Game Over
+    [SerializeField] private string mainMenuSceneName = "MainMenu"; // Escena del Menú Principal
 
+    // Propiedad para acceder/modificar el intervalo de spawn actual
     public float SpawnInterval
     {
         get => ObstacleSpawner.Instance != null ? ObstacleSpawner.Instance.spawnIntervalCurrent : 0f;
         set { if (ObstacleSpawner.Instance != null) ObstacleSpawner.Instance.SetSpawnInterval(value); }
     }
-    private bool isGameOver = false;
 
-    private float timeElapsed = 0f;
-    private int modeSwitchCount = 0;
-    private int obstaclesAvoidedCount = 0;
-    private int totalScore = 0;
+    // Variables de estado del juego
+    private bool isGameOver = false;
+    private float timeElapsed = 0f;         // Tiempo transcurrido en la partida
+    private int modeSwitchCount = 0;        // Contador de cambios de modo
+    private int obstaclesAvoidedCount = 0;  // Contador de obstáculos evitados
+    private int totalScore = 0;             // Puntuación acumulada total
 
     private void Awake()
     {
+        // Implementación del patrón Singleton
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            DontDestroyOnLoad(gameObject); // Persiste entre escenas
         }
         else
         {
-            Destroy(gameObject);
+            Destroy(gameObject); // Evita duplicados
         }
     }
 
     private void Start()
     {
-        // Inicializa la propiedad SpawnInterval con el valor inicial
+        // Inicialización del juego
         SpawnInterval = spawnIntervalInitial;
         UpdateUI();
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
         if (modeText != null) modeText.text = "";
-        Time.timeScale = 1f;
-        Cursor.visible = false; // Asegúrate de que el cursor esté oculto durante el juego
+        Time.timeScale = 1f; // Asegura que el juego no esté pausado
+        Cursor.visible = false; // Oculta el cursor durante el juego
     }
 
     private void Update()
     {
-        if (isGameOver)
-        {
-            return; // Ya no actualizamos el tiempo si el juego ha terminado
-        }
-
-        timeElapsed += Time.deltaTime;
+        if (isGameOver) return; // No actualizar si el juego terminó
+        
+        timeElapsed += Time.deltaTime; // Actualiza el contador de tiempo
     }
 
+    // Añade puntos al jugador
     public void AddScore(int amount)
     {
         if (isGameOver) return;
@@ -79,6 +81,7 @@ public class GameManager : MonoBehaviour
         UpdateUI();
     }
 
+    // Añade vidas al jugador (sin superar el máximo)
     public void GainLife(int amount)
     {
         if (isGameOver) return;
@@ -87,6 +90,7 @@ public class GameManager : MonoBehaviour
         UpdateUI();
     }
 
+    // Reduce una vida y verifica game over
     public void LoseLife()
     {
         if (isGameOver) return;
@@ -100,6 +104,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Actualiza los elementos de la UI
     private void UpdateUI()
     {
         if (scoreText != null)
@@ -109,17 +114,16 @@ public class GameManager : MonoBehaviour
             livesText.text = $"Vidas: {lives}";
     }
 
+    // Maneja la lógica de fin de juego
     private void TriggerGameOver()
     {
         isGameOver = true;
-        Time.timeScale = 0f;
-        SaveGameStats();
+        Time.timeScale = 0f; // Pausa el juego
+        SaveGameStats(); // Guarda estadísticas
 
-        // Verifica si la escena está en el build
         if (Application.CanStreamedLevelBeLoaded(gameOverSceneName))
         {
             SceneManager.LoadScene(gameOverSceneName);
-            AudioManager.Instance?.PlayGameOverSound();
         }
         else
         {
@@ -127,10 +131,11 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Reinicia el juego con valores iniciales
     public void RestartGame()
     {
         Time.timeScale = 1f;
-        // Reiniciar variables
+        // Reset de variables de estado
         score = 0;
         lives = maxLives;
         timeElapsed = 0f;
@@ -138,20 +143,23 @@ public class GameManager : MonoBehaviour
         obstaclesAvoidedCount = 0;
         totalScore = 0;
         isGameOver = false;
-        // Carga la escena del juego actual para reiniciar el juego.
+        // Recarga la escena actual
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
+    // Incrementa contador de cambios de modo
     public void IncrementModeSwitchCount()
     {
         modeSwitchCount++;
     }
 
+    // Incrementa contador de obstáculos evitados
     public void IncrementObstaclesAvoidedCount()
     {
         obstaclesAvoidedCount++;
     }
 
+    // Guarda estadísticas en PlayerPrefs
     private void SaveGameStats()
     {
         PlayerPrefs.SetFloat("SurvivalTime", timeElapsed);
@@ -161,21 +169,19 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    // Método para cuando el jugador choca con un obstáculo
+    // Lógica cuando el jugador choca con obstáculo
     public void PlayerHitObstacle()
     {
         LoseLife();
-        // Aquí podrías añadir efectos visuales, sonido, vibraciones, etc.
-        // Ejemplo: Efecto de sonido en otro script
     }
 
-    // Métodos para acceder a las estadísticas (necesario para la pantalla de Game Over)
+    // Métodos de acceso a estadísticas
     public float GetSurvivalTime() { return timeElapsed; }
     public int GetModeSwitchCount() { return modeSwitchCount; }
     public int GetObstaclesAvoidedCount() { return obstaclesAvoidedCount; }
     public int GetTotalScore() { return totalScore; }
 
-    // Añade estos métodos a tu GameManager.cs
+    // Resetea valores del juego sin recargar escena
     public void ResetGame()
     {
         score = 0;
@@ -188,6 +194,7 @@ public class GameManager : MonoBehaviour
         SpawnInterval = spawnIntervalInitial;
     }
 
+    // Vuelve al menú principal
     public void ReturnToMainMenu()
     {
         ResetGame();
@@ -195,16 +202,12 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(mainMenuSceneName);
     }
 
-    // Añade este método a tu GameManager
+    // Carga el menú principal (alternativa)
     public void LoadMainMenu()
     {
         Time.timeScale = 1f;
         SceneManager.LoadScene(mainMenuSceneName);
-
-        // Opcional: Resetear valores si es necesario
-        // ResetGame();
-
-        // Asegurar que el cursor sea visible
+        // Restablece estado del cursor
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
     }

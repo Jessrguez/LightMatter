@@ -2,46 +2,56 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+/// <summary>
+/// Sistema que gestiona la generación y reciclaje de obstáculos usando Object Pooling
+/// </summary>
 public class ObstacleSpawner : MonoBehaviour
 {
+    // Singleton para acceso global
     public static ObstacleSpawner Instance { get; private set; }
 
     [Header("Obstacle Prefabs")]
-    [SerializeField] private GameObject waveObstaclePrefab;
-    [SerializeField] private GameObject particleObstaclePrefab;
+    [SerializeField] private GameObject waveObstaclePrefab;      // Prefab para obstáculos de onda
+    [SerializeField] private GameObject particleObstaclePrefab; // Prefab para obstáculos de partícula
 
     [Header("Spawn Settings")]
-    [SerializeField] private float[] spawnZPositions = { 30f, 40f, 50f, 60f };
-    public float spawnIntervalCurrent { get; private set; }
-    [SerializeField] private float initialSpawnInterval = 200f;
-    [SerializeField] private float minSpawnInterval = 100f;
-    [SerializeField] private float spawnXRange = 4f;
-    [SerializeField, Range(0f, 1f)] private float oppositeSpawnProbability = 0.5f;
+    [SerializeField] private float[] spawnZPositions = { 30f, 40f, 50f, 60f }; // Posiciones Z posibles
+    public float spawnIntervalCurrent { get; private set; }     // Intervalo actual (accesible públicamente)
+    [SerializeField] private float initialSpawnInterval = 2f;   // Intervalo inicial de generación
+    [SerializeField] private float minSpawnInterval = 2f;       // Intervalo mínimo (dificultad máxima)
+    [SerializeField] private float spawnXRange = 4f;            // Rango horizontal de aparición
+    [SerializeField, Range(0f, 1f)] private float oppositeSpawnProbability = 0.5f; // Probabilidad de cambiar tipo
 
     [Header("Movement Settings")]
-    [SerializeField] private float minObstacleSpeed = 10f;
-    [SerializeField] private float maxObstacleSpeed = 20f;
+    [SerializeField] private float minObstacleSpeed = 10f;      // Velocidad mínima
+    [SerializeField] private float maxObstacleSpeed = 20f;      // Velocidad máxima
 
-    private float spawnTimer;
-    private int lastSpawnedType = -1;
-    private Transform playerTransform;
-    private ObjectPool waveObstaclePool;
-    private ObjectPool particleObstaclePool;
-    private bool isSpawningActive = true;
+    // Variables de estado
+    private float spawnTimer;               // Temporizador para generación
+    private int lastSpawnedType = -1;       // Último tipo generado (-1 = ninguno)
+    private Transform playerTransform;       // Referencia al jugador
+    private ObjectPool waveObstaclePool;    // Pool para obstáculos onda
+    private ObjectPool particleObstaclePool;// Pool para obstáculos partícula
+    private bool isSpawningActive = true;   // Control de activación
 
     private void Awake()
     {
+        // Configuración del singleton
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
         Instance = this;
+        
         spawnIntervalCurrent = initialSpawnInterval;
         InitializePools();
         FindPlayer();
     }
 
+    /// <summary>
+    /// Inicializa los pools de objetos para cada tipo de obstáculo
+    /// </summary>
     private void InitializePools()
     {
         if (waveObstaclePrefab != null)
@@ -50,6 +60,9 @@ public class ObstacleSpawner : MonoBehaviour
             particleObstaclePool = new ObjectPool(particleObstaclePrefab, 5, 20, transform);
     }
 
+    /// <summary>
+    /// Busca y almacena referencia al jugador
+    /// </summary>
     private void FindPlayer()
     {
         playerTransform = PlayerController.Instance?.transform;
@@ -62,28 +75,34 @@ public class ObstacleSpawner : MonoBehaviour
 
     private void Start()
     {
-        spawnTimer = initialSpawnInterval; // Spawn inmediato al inicio
+        spawnTimer = initialSpawnInterval; // Primer spawn inmediato
     }
 
     private void Update()
     {
         if (!isSpawningActive || playerTransform == null) return;
 
+        // Lógica de generación por tiempo
         spawnTimer += Time.deltaTime;
         if (spawnTimer >= initialSpawnInterval)
         {
             SpawnObstacle();
             spawnTimer = 0f;
-            AdjustSpawnInterval();
+            AdjustSpawnInterval(); // Aumenta dificultad
         }
     }
 
+    /// <summary>
+    /// Reduce gradualmente el intervalo de generación (aumenta dificultad)
+    /// </summary>
     private void AdjustSpawnInterval()
     {
-        // Disminuye gradualmente el intervalo hasta alcanzar el mínimo
         initialSpawnInterval = Mathf.Max(minSpawnInterval, initialSpawnInterval * 0.98f);
     }
 
+    /// <summary>
+    /// Genera un nuevo obstáculo en posición aleatoria
+    /// </summary>
     private void SpawnObstacle()
     {
         Vector3 spawnPos = CalculateSpawnPosition();
@@ -95,47 +114,62 @@ public class ObstacleSpawner : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Calcula posición de aparición relativa al jugador
+    /// </summary>
     private Vector3 CalculateSpawnPosition()
     {
         float spawnZ = playerTransform.position.z + spawnZPositions[Random.Range(0, spawnZPositions.Length)];
         float spawnX = Random.Range(-spawnXRange, spawnXRange);
-        return new Vector3(spawnX, 1f, spawnZ);
+        return new Vector3(spawnX, 1f, spawnZ); // Altura fija en Y=1
     }
 
+    /// <summary>
+    /// Decide y obtiene el próximo obstáculo a generar
+    /// </summary>
     private GameObject GetNextObstacle()
     {
         int nextType = DetermineNextObstacleType();
         lastSpawnedType = nextType;
 
-        return nextType == 0 ?
-            waveObstaclePool?.GetObject() :
+        return nextType == 0 ? 
+            waveObstaclePool?.GetObject() : 
             particleObstaclePool?.GetObject();
     }
 
+    /// <summary>
+    /// Determina el tipo de obstáculo con probabilidad controlada
+    /// </summary>
     private int DetermineNextObstacleType()
     {
-        if (lastSpawnedType == -1)
+        if (lastSpawnedType == -1) // Primera generación
             return Random.Range(0, 2);
 
-        return Random.value < oppositeSpawnProbability ?
-            1 - lastSpawnedType :
-            lastSpawnedType;
+        return Random.value < oppositeSpawnProbability ? 
+            1 - lastSpawnedType : // Cambia tipo
+            lastSpawnedType;       // Mismo tipo
     }
 
-private void SetupObstacle(GameObject obstacle, Vector3 position)
-{
-    obstacle.transform.position = position;
-    obstacle.transform.localScale = Vector3.one; // Asegura escala uniforme
-    obstacle.SetActive(true);
-
-    var mover = obstacle.GetComponent<ObstacleMovement>();
-    if (mover != null)
+    /// <summary>
+    /// Configura posición, escala y velocidad del obstáculo
+    /// </summary>
+    private void SetupObstacle(GameObject obstacle, Vector3 position)
     {
-        mover.speed = Random.Range(minObstacleSpeed, maxObstacleSpeed);
-    }
-}
+        obstacle.transform.position = position;
+        obstacle.transform.localScale = Vector3.one;
+        obstacle.SetActive(true);
 
-    public void ReturnObstacleToPool(GameObject obstacle) // Nombre consistente
+        var mover = obstacle.GetComponent<ObstacleMovement>();
+        if (mover != null)
+        {
+            mover.speed = Random.Range(minObstacleSpeed, maxObstacleSpeed);
+        }
+    }
+
+    /// <summary>
+    /// Devuelve un obstáculo al pool correspondiente según su tag
+    /// </summary>
+    public void ReturnObstacleToPool(GameObject obstacle)
     {
         if (obstacle == null) return;
 
@@ -150,21 +184,32 @@ private void SetupObstacle(GameObject obstacle, Vector3 position)
                 particleObstaclePool?.ReturnObject(obstacle);
                 break;
             default:
-                Destroy(obstacle);
+                Destroy(obstacle); // Fallback si no tiene tag válido
                 break;
         }
     }
 
+    // --- Métodos públicos para control externo ---
+    
+    /// <summary>
+    /// Establece nuevo intervalo de generación (asegurando mínimo)
+    /// </summary>
     public void SetSpawnInterval(float newInterval)
     {
         spawnIntervalCurrent = Mathf.Max(minSpawnInterval, newInterval);
     }
 
+    /// <summary>
+    /// Activa/desactiva la generación de obstáculos
+    /// </summary>
     public void SetSpawningActive(bool active)
     {
         isSpawningActive = active;
     }
 
+    /// <summary>
+    /// Reinicia configuraciones al estado inicial
+    /// </summary>
     public void ResetSpawner()
     {
         initialSpawnInterval = 2.5f;
