@@ -2116,12 +2116,10 @@ MonoBehaviour:
   score: 0
   lives: 3
   maxLives: 5
-  scoreText: {fileID: 4554313}
-  livesText: {fileID: 1002164119}
-  modeText: {fileID: 2083207191}
   gameOverPanel: {fileID: 806604119}
-  gameOverText: {fileID: 764626662}
+  gameOverText: {fileID: 0}
   spawnIntervalInitial: 2
+  gameSceneName: GameScene
   gameOverSceneName: GameOverScene
   mainMenuSceneName: MainMenu
 --- !u!1 &1934736433 stripped
@@ -2338,9 +2336,17 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: 7f979053d9de914439b89b9d2f58b4cb, type: 2}
     - target: {fileID: 4585207994218767262, guid: 48acf245f5f59324d8115feecec95f93, type: 3}
+      propertyPath: failSound
+      value: 
+      objectReference: {fileID: 924271058}
+    - target: {fileID: 4585207994218767262, guid: 48acf245f5f59324d8115feecec95f93, type: 3}
       propertyPath: destroyDelay
       value: 40
       objectReference: {fileID: 0}
+    - target: {fileID: 4585207994218767262, guid: 48acf245f5f59324d8115feecec95f93, type: 3}
+      propertyPath: successSound
+      value: 
+      objectReference: {fileID: 487721015}
     - target: {fileID: 6526656589154775437, guid: 48acf245f5f59324d8115feecec95f93, type: 3}
       propertyPath: m_Name
       value: WaveObstacle
@@ -2475,9 +2481,17 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6648948608668827653, guid: 430e572924d09eb4da1691faa1a92c88, type: 3}
+      propertyPath: failSound
+      value: 
+      objectReference: {fileID: 924271058}
+    - target: {fileID: 6648948608668827653, guid: 430e572924d09eb4da1691faa1a92c88, type: 3}
       propertyPath: destroyDelay
       value: 40
       objectReference: {fileID: 0}
+    - target: {fileID: 6648948608668827653, guid: 430e572924d09eb4da1691faa1a92c88, type: 3}
+      propertyPath: successSound
+      value: 
+      objectReference: {fileID: 487721015}
     - target: {fileID: 7240240847193313533, guid: 430e572924d09eb4da1691faa1a92c88, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -2528,6 +2542,6 @@ SceneRoots:
   - {fileID: 1295540684}
   - {fileID: 1842610097}
   - {fileID: 1218292666}
-  - {fileID: 1293785092}
   - {fileID: 487721016}
+  - {fileID: 1293785092}
   - {fileID: 924271059}
